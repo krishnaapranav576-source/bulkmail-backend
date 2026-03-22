@@ -28,8 +28,6 @@ const credential = mongoose.model(
   "bulkmail"
 )
 
-
-
 const Mail = mongoose.model(
   "mail",
   {
@@ -43,6 +41,7 @@ const Mail = mongoose.model(
 
 
 
+
 app.post("/sendemail", async (req, res) => {
 
   try {
@@ -53,7 +52,6 @@ app.post("/sendemail", async (req, res) => {
 
     console.log("Emails:", emailList.length)
 
-   
     const data = await credential.find()
 
     if (!data.length) {
@@ -66,14 +64,37 @@ app.post("/sendemail", async (req, res) => {
 
     console.log("Using:", user)
 
+
     
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: user,
-        pass: pass
-      }
-    })
+    let transporter
+
+    if (process.env.NODE_ENV === "production") {
+
+      transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        requireTLS: true,
+        auth: {
+          user: user,
+          pass: pass,
+        },
+        connectionTimeout: 20000,
+        greetingTimeout: 20000,
+        socketTimeout: 20000,
+      })
+
+    } else {
+
+      transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: user,
+          pass: pass,
+        },
+      })
+
+    }
 
 
    
@@ -91,9 +112,8 @@ app.post("/sendemail", async (req, res) => {
     }
 
 
-    
     await Mail.create({
-      subject: subject,
+      subject,
       body: msg,
       emails: emailList,
       status: "sent"
